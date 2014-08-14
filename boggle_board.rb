@@ -1,8 +1,8 @@
-# Boggle game with driver code to run the program. 
+# Boggle game with driver code to run the program.
 # visual shuffle sequence
 # board will show you in color the word you are looking for if it exists.
 
-# FIX THIS: downside it doesn't overwrite the previous boards. 
+# FIX THIS: downside it doesn't overwrite the previous boards.
 
 
 class BoggleBoard
@@ -21,7 +21,7 @@ class BoggleBoard
                ["E", "E", "G", "H", "N", "W"],
                ["A", "F", "F", "K", "P", "S"],
                ["H", "L", "N", "N", "R", "Z"],
-               ["D", "E", "I", "L", "R", "X"]] 
+               ["D", "E", "I", "L", "R", "X"]]
 
 
   def initialize(size=4)
@@ -34,23 +34,23 @@ class BoggleBoard
     up        = -1
     left      = -1
     @location_offset = [ [up ,0],
-                         [up, right], 
+                         [up, right],
                          [0, right],
                          [down, right],
                          [down, 0],
-                         [down, left], 
-                         [0, left], 
+                         [down, left],
+                         [0, left],
                          [up, left] ]
   end
-  
+
   def shake!
     @word_path = nil  # remove previous word path color on board during shuffle
     # show the user a visual of shaking the game by putting a new board to the screen in fast succession and keeping the last solution
-    15.times do |iterations| 
-      die_unchosen = (0..15).to_a 
+    15.times do |iterations|
+      die_unchosen = (0..15).to_a
       for row in 0...@size do
         for col in 0...@size do
-          current_die = die_unchosen.sample(1)                #grab random die that remains in die_unchosen 
+          current_die = die_unchosen.sample(1)                #grab random die that remains in die_unchosen
           current_face = rand(6)
           @board[row][col] = LETTERS[current_die[0]][current_face[0]]    # grab random face from die
           die_unchosen.delete(current_die[0])                    # remove die from remaining possible die
@@ -62,20 +62,20 @@ class BoggleBoard
     end
   end
 
-  def to_s                # print boggle board 
+  def to_s                # print boggle board
 
      print "\e[2J" # Clear the screen
      print "\e[H" # Moves cursor to the top left of the terminal
-    
+
     strs_into_me_arr = []
     for row in 0...@size do
       row_of_blocks = ""
       for col in 0...@size do
         # print makes the letter at each location [row, col] along the path that the word was found in possible parameter color_these_locations_arr
         if @word_path != nil   # if word recently found
-          row_of_blocks += (@word_path.include?([row, col]) == true ? "\033[96m" : "")  + "#{@board[row][col]} " + (@word_path.include?([row, col]) == true ? "\033[0m" : "")
+          row_of_blocks += (@word_path.include?([row, col]) == true ? "\033[31m" : "")  + "#{@board[row][col]} " + (@word_path.include?([row, col]) == true ? "\033[0m" : "")
         else                              # no word recently found. Don't use colored letters in locations
-          row_of_blocks += "#{@board[row][col]} "  # 
+          row_of_blocks += "#{@board[row][col]} "  #
         end
       end
       strs_into_me_arr << row_of_blocks
@@ -108,7 +108,7 @@ class BoggleBoard
   # input : [x,y] location on boggle board
   # background info : this method is called by recursion_part_of_search()
   def should_use_array_location?(new_location, path, word)
-    
+
     # not real locations on the game
     if (new_location[0] < 0       ||       # off the top border
         new_location[0] >= @size  ||       # off the bottom border
@@ -122,7 +122,7 @@ class BoggleBoard
       return false
     else
       return true
-    end 
+    end
   end
 
   # called by include? method after the first letter in a word is found to check in all directions for the remaining letters in word
@@ -132,10 +132,10 @@ class BoggleBoard
       return true
     end
 
-    for offset in 0...8 # test if any adjacent locations on board is contains the next letter in word and not used already 
-      if should_use_array_location?([path[-1][0] + @location_offset[offset][0], path[-1][1] + @location_offset[offset][1]], path, word)    
+    for offset in 0...8 # test if any adjacent locations on board is contains the next letter in word and not used already
+      if should_use_array_location?([path[-1][0] + @location_offset[offset][0], path[-1][1] + @location_offset[offset][1]], path, word)
          return true if recursion_part_of_search(path.clone << [path[-1][0] + @location_offset[offset][0], path[-1][1] + @location_offset[offset][1]], word.clone.split(//).drop(1).join(""))
-      end 
+      end
     end
     false
   end
@@ -160,13 +160,13 @@ def playGame()
       g.shake!
     else
       if g.include?(input)          # try to find word on board
-        puts "#{input} found"     # relay to user that word was found
-      else                          
+        puts "\"#{input}\" found"     # relay to user that word was found
+      else
         puts "no \"#{input}\" "     # relay to user that word not found
       end
     end
-    
-    puts "enter any word to try to find it on boggle board. \"shake!\" to start new game \"-1\" to exit"
+
+    puts "1) Enter any word to try to find it on boggle board. \n2) \"shake!\" to start new game. \n3) \"-1\" to exit"
     input = gets.chomp              # get moreinput from user
   end
 
