@@ -3,9 +3,13 @@
 # board will show you in color the word you are looking for if it exists.
 
 # FIX THIS: downside it doesn't overwrite the previous boards.
-
+require 'set'
+require 'pry'
 
 class BoggleBoard
+  attr_reader :words_found, :score
+
+
   LETTERS =   [["A", "A", "E", "E", "G", "N"],
                ["E", "L", "R", "T", "T", "Y"],
                ["A", "O", "O", "T", "T", "W"],
@@ -28,6 +32,8 @@ class BoggleBoard
     @board = Array.new(size){Array.new(size, "-")}
     @size = size
     @word_path = nil
+    @words_found = Set.new
+    @score = 0
 
     down      =  1
     right     =  1
@@ -63,10 +69,11 @@ class BoggleBoard
   end
 
   def to_s                # print boggle board
+    print "\e[2J" # Clear the screen
+    print "\e[H" # Moves cursor to the top left of the terminal
 
-     print "\e[2J" # Clear the screen
-     print "\e[H" # Moves cursor to the top left of the terminal
-
+    puts "words found: #{words_found.length}."
+    puts "score: #{score}."
     strs_into_me_arr = []
     for row in 0...@size do
       row_of_blocks = ""
@@ -85,60 +92,76 @@ class BoggleBoard
     puts strs_into_me_arr
   end
 
-  # main search method called by user
-  # input : word you are looking for
-  def include?(word)
-    word = word.upcase
-    @word_path = nil    # reset path of found word on the board if any
-    return "Word Must Be At Least 3 Letters Long" if word.length < 3
+  def search word
+    message = ''
+    if words_found.include? word
+      message = "\"#{word}\" already found"     # relay to user that word was found
+    elsif find_word_on_board(word)          # try to find word on board
+      message = "\"#{word}\" found"     # relay to user that word was found
+    else
+      message = "no \"#{word}\" "     # relay to user that word not found
+    end
+    message
+  end
 
-    for row in 0...@size do
-      for col in 0...@size do
-        if @board[row][col] == word[0]                    # if first letter of the word is found, then start search here
-          if recursion_part_of_search([[row,col]], word)  # pass in row and col of starting location
-            self.to_s                                     # update board with cool color showing path of word
-            return true                                   # word was found
+  private
+
+
+    # input : [x,y] location on boggle board
+    # background info : this method is called by recursion_part_of_search()
+    def should_use_array_location?(new_location, path, word)
+
+      # not real locations on the game
+      if (new_location[0] < 0       ||       # off the top border
+          new_location[0] >= @size  ||       # off the bottom border
+          new_location[1] < 0       ||       # off the left border
+          new_location[1] >= @size)          # off the right border
+            return false
+      end
+
+      if(@board[new_location[0]][new_location[1]] != word[1]  ||    # if next letter in word is not what is found on board
+          path.include?(new_location))                              # if path location already exists in path
+        return false
+      else
+        return true
+      end
+    end
+
+    # called by include? method after the first letter in a word is found to check in all directions for the remaining letters in word
+    def recursion_part_of_search(path, word)
+      if word.length <= 1           # word was found
+        @word_path = path           # save the entire path to instance variable
+        return true
+      end
+
+      for offset in 0...8 # test if any adjacent locations on board is contains the next letter in word and not used already
+        if should_use_array_location?([path[-1][0] + @location_offset[offset][0], path[-1][1] + @location_offset[offset][1]], path, word)
+           return true if recursion_part_of_search(path.clone << [path[-1][0] + @location_offset[offset][0], path[-1][1] + @location_offset[offset][1]], word.clone.split(//).drop(1).join(""))
+        end
+      end
+      false
+    end
+
+    # main search method called by user
+    # input : word you are looking for
+    def find_word_on_board(word)
+      word = word.upcase
+      @word_path = nil    # reset path of found word on the board if any
+
+      for row in 0...@size do
+        for col in 0...@size do
+          if @board[row][col] == word[0]                    # if first letter of the word is found, then start search here
+            if recursion_part_of_search([[row,col]], word)  # pass in row and col of starting location
+              self.to_s                                   # update board with cool color showing path of word
+              @words_found << word
+              @score += word.length
+              return true                                 # word was found
+            end
           end
         end
       end
+      false
     end
-    false
-  end
-
-  # input : [x,y] location on boggle board
-  # background info : this method is called by recursion_part_of_search()
-  def should_use_array_location?(new_location, path, word)
-
-    # not real locations on the game
-    if (new_location[0] < 0       ||       # off the top border
-        new_location[0] >= @size  ||       # off the bottom border
-        new_location[1] < 0       ||       # off the left border
-        new_location[1] >= @size)          # off the right border
-          return false
-    end
-
-    if(@board[new_location[0]][new_location[1]] != word[1]  ||    # if next letter in word is not what is found on board
-        path.include?(new_location))                              # if path location already exists in path
-      return false
-    else
-      return true
-    end
-  end
-
-  # called by include? method after the first letter in a word is found to check in all directions for the remaining letters in word
-  def recursion_part_of_search(path, word)
-    if word.length <= 1           # word was found
-      @word_path = path           # save the entire path to instance variable
-      return true
-    end
-
-    for offset in 0...8 # test if any adjacent locations on board is contains the next letter in word and not used already
-      if should_use_array_location?([path[-1][0] + @location_offset[offset][0], path[-1][1] + @location_offset[offset][1]], path, word)
-         return true if recursion_part_of_search(path.clone << [path[-1][0] + @location_offset[offset][0], path[-1][1] + @location_offset[offset][1]], word.clone.split(//).drop(1).join(""))
-      end
-    end
-    false
-  end
 end
 
 
@@ -159,11 +182,7 @@ def playGame()
     if input == "shake!"
       g.shake!
     else
-      if g.include?(input)          # try to find word on board
-        puts "\"#{input}\" found"     # relay to user that word was found
-      else
-        puts "no \"#{input}\" "     # relay to user that word not found
-      end
+      puts g.search input
     end
 
     puts "1) Enter any word to try to find it on boggle board. \n2) \"shake!\" to start new game. \n3) \"-1\" to exit"
