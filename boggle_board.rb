@@ -8,6 +8,7 @@ require 'pry'
 
 class BoggleBoard
   attr_reader :words_found, :score
+  DICTIONARY_PATH = '/usr/share/dict/words'
 
   LETTERS =   [["A", "A", "E", "E", "G", "N"],
                ["E", "L", "R", "T", "T", "Y"],
@@ -31,8 +32,8 @@ class BoggleBoard
     @board = Array.new(size){Array.new(size, "-")}
     @size = size
     @word_path = nil
-    @words_found = Set.new
-    @score = 0
+
+    reset_default_variables()
 
     down      =  1
     right     =  1
@@ -49,7 +50,12 @@ class BoggleBoard
   end
 
   def shake!
+    @score = 0
+    @words_found = Set.new
+    @max_score = nil
     @word_path = nil  # remove previous word path color on board during shuffle
+    @max_words_could_find = nil
+
     # show the user a visual of shaking the game by putting a new board to the screen in fast succession and keeping the last solution
     15.times do |iterations|
       die_unchosen = (0..15).to_a
@@ -61,18 +67,17 @@ class BoggleBoard
           die_unchosen.delete(current_die[0])                    # remove die from remaining possible die
         end
       end
-      # print "\e[2J\e[f"
-      clear_screen
+      clear_terminal_screen
       self.to_s
       sleep(0.1)
     end
   end
 
   def to_s                # print boggle board
-    clear_screen
-    # print "\e[2J" # Clear the screen
-    # print "\e[H" # Moves cursor to the top left of the terminal
+    clear_terminal_screen
 
+    puts "max_score: #{@max_score}" unless @max_score.nil?
+    puts "max_words_could_find: #{@max_words_could_find}" unless @max_words_could_find.nil?
     puts "words found: #{words_found.length}."
     puts "score: #{score}."
     strs_into_me_arr = []
@@ -97,16 +102,43 @@ class BoggleBoard
     message = ''
     if words_found.include? word.upcase
       message = "\"#{word}\" already found"     # relay to user that word was found
-    elsif find_word_on_board(word)          # try to find word on board
-      message = "\"#{word}\" found"     # relay to user that word was found
     else
-      message = "no \"#{word}\" "     # relay to user that word not found
+      if find_word_on_board(word)          # try to find word on board
+        if find_word_in_dictionary word
+          message = "\"#{word}\" is not in the dictionary"     # relay to user that word was found
+        end
+      else
+        message = "\"#{word}\" is not on the board"     # relay to user that word not found
+      end
+      message
     end
-    message
+  end
+
+  def find_max_score_for_board!
+    return @max_score unless @max_score.nil?
+
+    user_words_found = @words_found
+    user_score = @score
+    words_found = Set.new
+
+    File.open DICTIONARY_PATH, 'r' do |file|
+      file.readlines.each do |line|
+        find_word_on_board line.chomp
+      end
+    end
+
+    max_score = @score
+
+    @score = user_score
+    puts self.to_s
+    @words_found = user_words_found
+
+
+    return max_score
   end
 
   private
-    def clear_screen
+    def clear_terminal_screen
       print "\e[2J" # Clear the screen
       print "\e[H" # Moves cursor to the top left of the terminal
     end
@@ -165,6 +197,23 @@ class BoggleBoard
       end
       false
     end
+
+    def find_word_in_dictionary word=''
+      File.open DICTIONARY_PATH, 'r' do |file|
+        file.readlines.each do |line|
+          return true if line.chomp == word
+        end
+      end
+      false
+    end
+
+    def reset_default_variables
+      @max_score = nil
+      @max_words_could_find = nil
+      @score = 0
+      @words_found = Set.new
+      @word_path = nil  # remove previous word path color on board during shuffle
+    end
 end
 
 
@@ -174,13 +223,9 @@ def playGame
   g = BoggleBoard.new
   input = ""
 
-  # puts "Type \"shake!\" to start game. Enter \"-1\" to quit"
-  # until (input == "shake!" || input == "-1")
-  #   input = gets.chomp              # get input from user
-  # end
   g.shake!
 
-  informational_message = "A) Enter any word to try to find it on boggle board. \nB) \"shake!\" to start new game. \nC) Enter \"-1\" to exit"
+  informational_message = "A) Enter any word to try to find it on boggle board. \nB) \"shake!\" to start new game. \nC) 'max_score' Figure out max score  of board. \nD) Enter \"-1\" to exit"
   puts informational_message
 
   input = gets.chomp              # get moreinput from user
@@ -188,9 +233,11 @@ def playGame
   until input == "-1"               # while user wants to keep playing
     if input == "shake!"
       g.shake!
+    elsif input == 'max_score'
+      puts g.find_max_score_for_board!
     else
       puts g.search(input)
-      puts g.to_s
+      g.to_s
     end
 
     puts informational_message
