@@ -39,14 +39,14 @@ class BoggleBoard
     right     =  1
     up        = -1
     left      = -1
-    @location_offset = [ [up ,0],
-                         [up, right],
-                         [0, right],
+    @location_offset = [ [up,   0],
+                         [up,   right],
+                         [0,    right],
                          [down, right],
                          [down, 0],
                          [down, left],
-                         [0, left],
-                         [up, left] ]
+                         [0,    left],
+                         [up,   left] ]
   end
 
   def shake!
