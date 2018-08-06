@@ -9,7 +9,6 @@ require 'pry'
 class BoggleBoard
   attr_reader :words_found, :score
 
-
   LETTERS =   [["A", "A", "E", "E", "G", "N"],
                ["E", "L", "R", "T", "T", "Y"],
                ["A", "O", "O", "T", "T", "W"],
@@ -62,15 +61,17 @@ class BoggleBoard
           die_unchosen.delete(current_die[0])                    # remove die from remaining possible die
         end
       end
-      print "\e[2J\e[f"
+      # print "\e[2J\e[f"
+      clear_screen
       self.to_s
       sleep(0.1)
     end
   end
 
   def to_s                # print boggle board
-    print "\e[2J" # Clear the screen
-    print "\e[H" # Moves cursor to the top left of the terminal
+    clear_screen
+    # print "\e[2J" # Clear the screen
+    # print "\e[H" # Moves cursor to the top left of the terminal
 
     puts "words found: #{words_found.length}."
     puts "score: #{score}."
@@ -94,7 +95,7 @@ class BoggleBoard
 
   def search word
     message = ''
-    if words_found.include? word
+    if words_found.include? word.upcase
       message = "\"#{word}\" already found"     # relay to user that word was found
     elsif find_word_on_board(word)          # try to find word on board
       message = "\"#{word}\" found"     # relay to user that word was found
@@ -105,8 +106,10 @@ class BoggleBoard
   end
 
   private
-
-
+    def clear_screen
+      print "\e[2J" # Clear the screen
+      print "\e[H" # Moves cursor to the top left of the terminal
+    end
     # input : [x,y] location on boggle board
     # background info : this method is called by recursion_part_of_search()
     def should_use_array_location?(new_location, path, word)
@@ -166,30 +169,33 @@ end
 
 
 # driver code for Boggle2 class
-def playGame()
+def playGame
 
   g = BoggleBoard.new
-  g.to_s
-
   input = ""
 
-  puts "Type \"shake!\" to start game. Enter \"-1\" to quit"
-  until (input == "shake!" || input == "-1")
-    input = gets.chomp              # get input from user
-  end
+  # puts "Type \"shake!\" to start game. Enter \"-1\" to quit"
+  # until (input == "shake!" || input == "-1")
+  #   input = gets.chomp              # get input from user
+  # end
+  g.shake!
+
+  informational_message = "A) Enter any word to try to find it on boggle board. \nB) \"shake!\" to start new game. \nC) Enter \"-1\" to exit"
+  puts informational_message
+
+  input = gets.chomp              # get moreinput from user
 
   until input == "-1"               # while user wants to keep playing
     if input == "shake!"
       g.shake!
     else
-      puts g.search input
+      puts g.search(input)
+      puts g.to_s
     end
 
-    puts "1) Enter any word to try to find it on boggle board. \n2) \"shake!\" to start new game. \n3) \"-1\" to exit"
+    puts informational_message
     input = gets.chomp              # get moreinput from user
   end
 
   puts "Thanks for Playing!"
 end
-
-
