@@ -54,7 +54,7 @@ class BoggleBoard
     @words_found = Set.new
     @max_score = nil
     @word_path = nil  # remove previous word path color on board during shuffle
-    @max_words_could_find = nil
+    @max_num_of_words_could_find = nil
 
     # show the user a visual of shaking the game by putting a new board to the screen in fast succession and keeping the last solution
     15.times do |iterations|
@@ -76,10 +76,10 @@ class BoggleBoard
   def to_s                # print boggle board
     clear_terminal_screen
 
-    puts "max_score: #{@max_score}" unless @max_score.nil?
-    puts "max_words_could_find: #{@max_words_could_find}" unless @max_words_could_find.nil?
-    puts "words found: #{words_found.length}."
-    puts "score: #{score}."
+    puts "-- max score possible: #{@max_score} --" unless @max_score.nil?
+    puts "-- max words you could find: #{@max_num_of_words_could_find} --" unless @max_num_of_words_could_find.nil?
+    puts "your score: #{score}."
+    puts "words you found: #{words_found.length}.\n"
     strs_into_me_arr = []
     for row in 0...@size do
       row_of_blocks = ""
@@ -116,10 +116,9 @@ class BoggleBoard
 
   def find_max_score_for_board!
     return @max_score unless @max_score.nil?
-
-    user_words_found = @words_found
-    user_score = @score
-    words_found = Set.new
+    _user_words_found = @words_found.clone
+    _user_score = @score
+    @words_found = Set.new
 
     File.open DICTIONARY_PATH, 'r' do |file|
       file.readlines.each do |line|
@@ -127,14 +126,12 @@ class BoggleBoard
       end
     end
 
-    max_score = @score
+    @max_score = @score
 
-    @score = user_score
-    puts self.to_s
-    @words_found = user_words_found
-
-
-    return max_score
+    @max_num_of_words_could_find = @words_found.length
+    @words_found = _user_words_found
+    @score = _user_score
+    return ({score: @max_score, max_words_could_find: @max_num_of_words_could_find})
   end
 
   private
@@ -209,7 +206,7 @@ class BoggleBoard
 
     def reset_default_variables
       @max_score = nil
-      @max_words_could_find = nil
+      @max_num_of_words_could_find = nil
       @score = 0
       @words_found = Set.new
       @word_path = nil  # remove previous word path color on board during shuffle
@@ -234,7 +231,8 @@ def playGame
     if input == "shake!"
       g.shake!
     elsif input == 'max_score'
-      puts g.find_max_score_for_board!
+      g.find_max_score_for_board!
+      puts g.to_s
     else
       puts g.search(input)
       g.to_s
